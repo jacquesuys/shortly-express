@@ -22,25 +22,34 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
-
-app.get('/', 
+app.get('/',
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create', 
+app.get('/create',
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links', 
+app.get('/signup',
+function(req, res) {
+  res.render('signup');
+});
+
+app.get('/login',
+function(req, res) {
+  res.render('login');
+});
+
+app.get('/links',
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
 });
 
-app.post('/links', 
+app.post('/links',
 function(req, res) {
   var uri = req.body.url;
 
@@ -71,6 +80,41 @@ function(req, res) {
     }
   });
 });
+
+app.post('/login',
+function(req, res) {
+  console.log('req ', req.body);
+
+});
+
+app.post('/signup',
+function(req, res){
+
+  new User(req.body).fetch().then(function(found){
+    if (found) {
+      console.log('users table was found');
+      res.send(200, found.attributes);
+    } else {
+      Users.create({
+        username: req.body.username,
+        password: req.body.password
+      })
+      .then(function(newLink) {
+        console.log('user created');
+        // res.send(200, newLink);
+      });
+
+    }
+  });
+  // grab request body
+    // pass it into user constructor
+      // if success send 200
+
+      // Users.create
+      // and then promise send status code
+
+      // if successful redirect to homepage
+})
 
 /************************************************************/
 // Write your authentication routes here
