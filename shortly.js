@@ -1,6 +1,6 @@
 var express = require('express');
 var session = require('express-session');
-// cookie parser?
+// var cookieParser = require('cookieparser');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
@@ -12,31 +12,24 @@ var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 
-var app = express();
 
+var app = express();
+app.use(session({
+  secret: 'ssshhhhh',
+  saveUninitialized: true,
+  resave: true
+}));
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 
-var createSession = function(){
-  // Sessions
-  app.use(session({
-    secret: 'ssshhhhh',
-    name: 'First session',
-    saveUninitialized: true,
-    resave: true
-  }));
-};
-createSession()
-
-app.get(function ( req, res, next) {
-  if(req.session.user) {
-    next()
+function restrict(req, res, next) {
+  if(req.session.username) {
+    next();
   } else {
     req.session.error = 'access denied';
-    res.redirect('/login')
+    res.redirect('/login');
   }
-})
-
+};
 
 
 app.use(partials());
@@ -47,15 +40,9 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
-app.get('/',
+app.get('/', restrict,
 function(req, res) {
-  console.log(req.session);
-  if( req.session ) {
-    console.log(req.session);
-    res.render('index');
-  } else {
-    res.redirect('/login');
-  }
+  res.render('index');
 });
 
 app.get('/create',
@@ -67,14 +54,6 @@ function(req, res) {
   }
 });
 
-app.get('/logout',
-function(req, res) {
-  req.session.destroy();
-  req.end();
-  console.log('ENDED?', req.session);
-  res.redirect('/login');
-});
-
 app.get('/signup',
 function(req, res) {
   res.render('signup');
@@ -82,6 +61,7 @@ function(req, res) {
 
 app.get('/login',
 function(req, res) {
+  req.session.destroy();
   res.render('login');
 });
 
@@ -145,8 +125,10 @@ function(req, res){
       })
       .then(function() {
         console.log('user created');
-        createSession();
-        res.redirect('/');
+        req.session.regenerate(function(){
+          req.session.username = req.body.username;
+          res.redirect('/');
+        });
       });
     }
   });
@@ -157,8 +139,10 @@ app.post('/login',
 function(req, res){
   new User(req.body).fetch().then(function(found){
     if (found) {
-      createSession();
-      res.redirect('/');
+      req.session.regenerate(function(){
+        req.session.username = req.body.username;
+        res.redirect('/');
+      });
     } else {
       console.log('404');
     }
@@ -192,8 +176,3 @@ app.get('/*', function(req, res) {
 
 console.log('Shortly is listening on 4568');
 app.listen(4568);
-
-// midware
-// if user fail to login then redirect to login page
-// else user redirect to index page
-// this is check users
