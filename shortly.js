@@ -22,7 +22,7 @@ app.use(session({
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 
-function restrict(req, res, next) {
+var restrict = function(req, res, next) {
   if(req.session.username) {
     next();
   } else {
@@ -30,7 +30,6 @@ function restrict(req, res, next) {
     res.redirect('/login');
   }
 };
-
 
 app.use(partials());
 
@@ -161,7 +160,7 @@ app.get('/*', function(req, res) {
       res.redirect('/');
     } else {
       var click = new Click({
-        linkId: link.get('id')
+        linkId: link.get('linkId')
       });
 
       click.save().then(function() {
