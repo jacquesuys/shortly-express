@@ -1,4 +1,6 @@
 var express = require('express');
+var session = require('express-session');
+// cookie parser?
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
@@ -16,7 +18,16 @@ app.set('loggedIn', false);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 
+var createSession = function(){
+  // Sessions
+  app.use(session({
+    secret: 'ssshhhhh',
+    name: 'First session'
+  }));
+}
+
 app.use(partials());
+
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
 // Parse forms (signup/login)
@@ -25,21 +36,19 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/',
 function(req, res) {
-  var loggedIn = app.get('loggedIn');
-  if( loggedIn ) {
+  if( req.session ) {
     res.render('index');
   } else {
-    res.redirect('/login')
+    res.redirect('/login');
   }
 });
 
 app.get('/create',
 function(req, res) {
-  var loggedIn = app.get('loggedIn');
-  if( loggedIn ) {
+  if( req.session ) {
     res.render('index');
   } else {
-    res.redirect('/login')
+    res.redirect('/login');
   }
 });
 
@@ -55,13 +64,12 @@ function(req, res) {
 
 app.get('/links',
 function(req, res) {
-  var loggedIn = app.get('loggedIn');
-  if( loggedIn ) {
+  if( req.session ) {
     Links.reset().fetch().then(function(links) {
       res.send(200, links.models);
     });
   } else {
-    res.redirect('/login')
+    res.redirect('/login');
   }
 });
 
@@ -114,7 +122,7 @@ function(req, res){
       })
       .then(function() {
         console.log('user created');
-        // create a logged in state
+        createSession();
         res.redirect('/');
       });
     }
@@ -123,15 +131,11 @@ function(req, res){
 });
 
 app.post('/login',
-function(res, req){
+function(req, res){
   new User(req.body).fetch().then(function(found){
     if (found) {
-      //console.log('found ', found);
-      app.set('loggedIn', true);
-      console.log('loggedIn ', util.checkUser());
-      // create a logged in state
-      // res.redirect('/');
-      //console.log('req.params ', req);
+      createSession();
+      res.redirect('/');
     } else {
       console.log('404');
     }
@@ -165,3 +169,18 @@ app.get('/*', function(req, res) {
 
 console.log('Shortly is listening on 4568');
 app.listen(4568);
+
+// midware
+// if user fail to login then redirect to login page
+// else user redirect to index page
+// this is check users
+
+// var redir = function ( req, res, next) {
+//   if(req.session.user) {
+//     next()
+//   } else {
+//     req.session.error = 'access denied';
+//     res.redirect('/login')
+//   }
+// }
+// app.get('')

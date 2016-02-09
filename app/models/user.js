@@ -6,16 +6,16 @@ var User = db.Model.extend({
   tableName: 'users',
   hasTimestamps: true,
   defaults: {
-    // userId
-    // sessionId
-    loggedIn: false
   },
   initialize: function() {
-    this.on('add', function (model, attrs, options){
-      console.log('model ', model);
-      console.log('attrs', attrs);
-      console.log('options ', options);
-    });
+    this.on('add', this.logger, this);
+  },
+
+  logger: function (model, attrs, options){
+    // console.log('model ', model);
+    // console.log('attrs', attrs);
+    // console.log('options ', options);
+    // Maybe set the state for the login ??
   }
 
 });
