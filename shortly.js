@@ -13,7 +13,6 @@ var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 
 var app = express();
-app.set('loggedIn', false);
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -22,9 +21,23 @@ var createSession = function(){
   // Sessions
   app.use(session({
     secret: 'ssshhhhh',
-    name: 'First session'
+    name: 'First session',
+    saveUninitialized: true,
+    resave: true
   }));
-}
+};
+createSession()
+
+app.get(function ( req, res, next) {
+  if(req.session.user) {
+    next()
+  } else {
+    req.session.error = 'access denied';
+    res.redirect('/login')
+  }
+})
+
+
 
 app.use(partials());
 
@@ -36,7 +49,9 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/',
 function(req, res) {
+  console.log(req.session);
   if( req.session ) {
+    console.log(req.session);
     res.render('index');
   } else {
     res.redirect('/login');
@@ -50,6 +65,14 @@ function(req, res) {
   } else {
     res.redirect('/login');
   }
+});
+
+app.get('/logout',
+function(req, res) {
+  req.session.destroy();
+  req.end();
+  console.log('ENDED?', req.session);
+  res.redirect('/login');
 });
 
 app.get('/signup',
@@ -114,7 +137,7 @@ function(req, res){
   new User(req.body).fetch().then(function(found){
     if (found) {
       // Print out to screen that user exits
-      console.log('user has already existed');
+      res.redirect('/login');
     } else {
       Users.create({
         username: req.body.username,
@@ -174,13 +197,3 @@ app.listen(4568);
 // if user fail to login then redirect to login page
 // else user redirect to index page
 // this is check users
-
-// var redir = function ( req, res, next) {
-//   if(req.session.user) {
-//     next()
-//   } else {
-//     req.session.error = 'access denied';
-//     res.redirect('/login')
-//   }
-// }
-// app.get('')
