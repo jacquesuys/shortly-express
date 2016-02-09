@@ -3,7 +3,6 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 
-
 var db = require('./app/config');
 var Users = require('./app/collections/users');
 var User = require('./app/models/user');
@@ -12,9 +11,11 @@ var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 
 var app = express();
+app.set('loggedIn', false);
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
+
 app.use(partials());
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
@@ -24,12 +25,22 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/',
 function(req, res) {
-  res.render('index');
+  var loggedIn = app.get('loggedIn');
+  if( loggedIn ) {
+    res.render('index');
+  } else {
+    res.redirect('/login')
+  }
 });
 
 app.get('/create',
 function(req, res) {
-  res.render('index');
+  var loggedIn = app.get('loggedIn');
+  if( loggedIn ) {
+    res.render('index');
+  } else {
+    res.redirect('/login')
+  }
 });
 
 app.get('/signup',
@@ -44,9 +55,14 @@ function(req, res) {
 
 app.get('/links',
 function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.send(200, links.models);
-  });
+  var loggedIn = app.get('loggedIn');
+  if( loggedIn ) {
+    Links.reset().fetch().then(function(links) {
+      res.send(200, links.models);
+    });
+  } else {
+    res.redirect('/login')
+  }
 });
 
 app.post('/links',
@@ -81,46 +97,46 @@ function(req, res) {
   });
 });
 
-app.post('/login',
-function(req, res) {
-  console.log('req ', req.body);
-
-});
-
+/************************************************************/
+// Write your authentication routes here
+/************************************************************/
 app.post('/signup',
 function(req, res){
 
   new User(req.body).fetch().then(function(found){
     if (found) {
-      console.log('users table was found');
-      res.send(200, found.attributes);
+      // Print out to screen that user exits
+      console.log('user has already existed');
     } else {
       Users.create({
         username: req.body.username,
         password: req.body.password
       })
-      .then(function(newLink) {
+      .then(function() {
         console.log('user created');
-        // res.send(200, newLink);
+        // create a logged in state
+        res.redirect('/');
       });
-
     }
   });
-  // grab request body
-    // pass it into user constructor
-      // if success send 200
 
-      // Users.create
-      // and then promise send status code
+});
 
-      // if successful redirect to homepage
-})
-
-/************************************************************/
-// Write your authentication routes here
-/************************************************************/
-
-
+app.post('/login',
+function(res, req){
+  new User(req.body).fetch().then(function(found){
+    if (found) {
+      //console.log('found ', found);
+      app.set('loggedIn', true);
+      console.log('loggedIn ', util.checkUser());
+      // create a logged in state
+      // res.redirect('/');
+      //console.log('req.params ', req);
+    } else {
+      console.log('404');
+    }
+  });
+});
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
